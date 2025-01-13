@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:flutter/cupertino.dart';
 import 'package:weather/models/weather-data.dart';
 import 'package:weather/secrets.dart';
 import 'package:weather/services/location.dart';
@@ -18,7 +15,6 @@ class WeatherService {
   }
 
   Future<WeatherData> getCityWeather(String cityName) async{
-    print('${_baseUrl}?q=${cityName}&appid=${_apiKey}&units=metric');
     Networking networking = Networking(url: '${_baseUrl}?q=${cityName}&appid=${_apiKey}&units=metric');
     final data = await networking.getData();
 
@@ -38,7 +34,7 @@ class WeatherService {
     Location location = Location();
     await location.getCurrentPosition();
 
-    Networking networking = Networking(url: '${_baseUrl}?lat=${location.latitude}&lon=${location.longitude}&appid=${_apiKey}');
+    Networking networking = Networking(url: '${_baseUrl}?lat=${location.latitude}&lon=${location.longitude}&appid=${_apiKey}&units=metric');
     var data = await networking.getData();
 
     try {

@@ -14,7 +14,10 @@ class _LocationScreenState extends State<LocationScreen> {
 
   int temperature = 0;
   String currentCity = '';
+  String descriptionMessage = '';
+  String weatherIcon = '';
 
+  bool isLoading = false;
 
   @override
   initState () {
@@ -25,20 +28,42 @@ class _LocationScreenState extends State<LocationScreen> {
   }
 
   Future<void> _getInitialData () async {
+    setState(() {
+      isLoading = true;
+    });
     WeatherService weatherService = new WeatherService();
     WeatherData data = await weatherService.getWeatherData();
-    
+
+    updateUI((data.main?.temp ?? 0.0).toInt(), data.name ?? '', (data.main?.humidity ?? 0.0).toInt());
     setState(() {
-      temperature = (data.main?.temp ?? 0.0).toInt();
-      currentCity = data.name ?? '';
+      isLoading = false;
     });
   }
 
-  void updateUI (int temp, String newCity) {
+  void updateUI (int temp, String newCity, int condition) {
+    String descriptionMessageResult = getDescriptionMessage(temp);
+    String conditionIcon = getTemperatureEmoji(condition);
+
     setState(() {
       temperature = temp;
       currentCity = newCity;
+      descriptionMessage = descriptionMessageResult;
+      weatherIcon = conditionIcon;
     });
+  }
+
+  String getDescriptionMessage (int temp) {
+    WeatherService weatherService = WeatherService();
+    String value = weatherService.getMessage(temp);
+
+    return value;
+  }
+
+  String getTemperatureEmoji (int condition) {
+    WeatherService weatherService = WeatherService();
+    String value = weatherService.getWeatherIcon(condition);
+
+    return value;
   }
 
   @override
@@ -63,7 +88,18 @@ class _LocationScreenState extends State<LocationScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () async {
+                      setState(() {
+                        isLoading = true;
+                      });
+                      WeatherService weatherService = WeatherService();
+                      WeatherData weatherData = await weatherService.getWeatherData();
+
+                      updateUI((weatherData.main?.temp ?? 0.0).toInt(), weatherData.name ?? '', (weatherData.main?.humidity ?? 0.0).toInt());
+                      setState(() {
+                        isLoading = false;
+                      });
+                    },
                     child: Icon(
                       Icons.near_me,
                       size: 50.0,
@@ -77,11 +113,18 @@ class _LocationScreenState extends State<LocationScreen> {
                         },
                       ));
                       if (cityName != null){
+                        setState(() {
+                          isLoading = true;
+                        });
                         final weather = new WeatherService();
                         var weatherData = await weather.getCityWeather(cityName);
 
                         int temp = weatherData.main?.temp?.toInt() ?? 0;
-                        updateUI(temp, cityName);
+                        int condition = weatherData.main?.humidity?.toInt() ?? 0;
+                        updateUI(temp, cityName, condition);
+                        setState(() {
+                          isLoading = false;
+                        });
                       }
                     },
                     child: Icon(
@@ -93,14 +136,14 @@ class _LocationScreenState extends State<LocationScreen> {
               ),
               Padding(
                 padding: EdgeInsets.only(left: 15.0),
-                child: Row(
+                child: isLoading ? CircularProgressIndicator() : Row(
                   children: <Widget>[
                     Text(
                       '$temperature°',
                       style: kTempTextStyle,
                     ),
                     Text(
-                      '☀️',
+                      weatherIcon,
                       style: kConditionTextStyle,
                     ),
                   ],
@@ -108,8 +151,8 @@ class _LocationScreenState extends State<LocationScreen> {
               ),
               Padding(
                 padding: EdgeInsets.only(right: 15.0),
-                child: Text(
-                  "It's 🍦 time in $currentCity!",
+                child: isLoading ? CircularProgressIndicator() : Text(
+                  "$descriptionMessage in $currentCity!",
                   textAlign: TextAlign.right,
                   style: kMessageTextStyle,
                 ),
